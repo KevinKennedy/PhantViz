@@ -37,9 +37,6 @@ namespace PhantViz
             var contentString = await response.Content.ReadAsStringAsync();
 
             var readings = JsonConvert.DeserializeObject<List<Reading>>(contentString);
-            //var serializer = new JsonSerializer();
-            //serializer.Deserialize<SerializationContainer>(new Json())
-
 
         }
     }
