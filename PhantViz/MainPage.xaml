@@ -5,10 +5,13 @@
     xmlns:local="using:PhantViz"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d">
+    xmlns:canvas="using:Microsoft.Graphics.Canvas.UI.Xaml"
+    mc:Ignorable="d"
+    >
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-        <Button HorizontalAlignment="Left" VerticalAlignment="Top" Content="Read" Click="Button_Click"/>
+        <canvas:CanvasControl x:Name="canvas" Draw="canvas_Draw"/>
+        <Button HorizontalAlignment="Left" VerticalAlignment="Top" Content="Sync" Click="Button_Click"/>
 
     </Grid>
 </Page>

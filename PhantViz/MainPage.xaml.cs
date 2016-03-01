@@ -4,6 +4,9 @@ using Newtonsoft.Json;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.Web.Http;
+using Microsoft.Graphics.Canvas;
+using Microsoft.Graphics.Canvas.Effects;
+using Windows.UI;
 
 namespace PhantViz
 {
@@ -26,6 +29,14 @@ namespace PhantViz
             };
 
             this.Loaded += OnLoaded;
+            this.Unloaded += OnUnloaded;
+        }
+
+        private void OnUnloaded(object sender, RoutedEventArgs e)
+        {
+            // Prevent memory leaks if this page comes and goes
+            this.canvas.RemoveFromVisualTree();
+            this.canvas = null;
         }
 
         private async void OnLoaded(object sender, RoutedEventArgs e)
@@ -36,14 +47,50 @@ namespace PhantViz
         private async void Button_Click(object sender, RoutedEventArgs e)
         {
             await this.feed.RefreshFromServer();
+        }
 
-            //var client = new HttpClient();
+        private void canvas_Draw(Microsoft.Graphics.Canvas.UI.Xaml.CanvasControl sender, Microsoft.Graphics.Canvas.UI.Xaml.CanvasDrawEventArgs args)
+        {
+            int sampleCount = this.feed.Samples.Count;
 
-            //var response = await client.GetAsync(new Uri("https://data.sparkfun.com/output/G2J4DlppVaILqAn7XnKd.json"));
-            //var contentString = await response.Content.ReadAsStringAsync();
+            if(sampleCount <= 0 || this.ActualWidth <= 0)
+            {
+                return;
+            }
 
-            //var readings = JsonConvert.DeserializeObject<List<Sample>>(contentString);
+            float maxHumidity = feed.Samples[0].humidity;
+            float maxTemperature = feed.Samples[0].temperature;
+            foreach(var sample in this.feed.Samples)
+            {
+                if (sample.humidity > maxHumidity) maxHumidity = sample.humidity;
+                if (sample.temperature > maxTemperature) maxTemperature = sample.temperature;
+            }
 
+            float samplesPerPixel = (float)sampleCount / (float)sender.ActualWidth;
+            float yScaleFactor = (float)sender.ActualHeight / maxHumidity;
+            int nextSampleToDrawIndex = 0;
+            float prevX = -1;
+            float prevY = 0;
+            for(float x = 0; x < sender.ActualWidth; x++)
+            {
+                int postUltimateSampleIndex = (int) ((float)(x + 1) * samplesPerPixel);
+                if (postUltimateSampleIndex > sampleCount) postUltimateSampleIndex = sampleCount;
+
+                for(int index = nextSampleToDrawIndex; index < postUltimateSampleIndex; index++)
+                {
+                    float y = (float)sender.ActualHeight - (this.feed.Samples[index].humidity * yScaleFactor);
+                    if(prevX < 0)
+                    {
+                        prevX = x;
+                        prevY = y;
+                    }
+                    args.DrawingSession.DrawLine(prevX, prevY, x, y, Colors.Red);
+                    prevX = x;
+                    prevY = y;
+                }
+
+                nextSampleToDrawIndex = postUltimateSampleIndex;
+            }
         }
     }
 

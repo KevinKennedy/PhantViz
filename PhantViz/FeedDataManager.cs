@@ -35,6 +35,8 @@ namespace PhantViz
                 var contentString = await FileIO.ReadTextAsync(storageFile);
                 var samples = JsonConvert.DeserializeObject<List<Sample>>(contentString);
 
+                samples.Sort((a, b) => a.timestamp.CompareTo(b.timestamp));
+
                 this.allData = contentString;
                 this.allSamples = samples;
             }
@@ -55,9 +57,17 @@ namespace PhantViz
 
                 var samples = JsonConvert.DeserializeObject<List<Sample>>(contentString);
 
+                samples.Sort((a, b) => a.timestamp.CompareTo(b.timestamp));
+
                 // Save this to our local file store
-                if(!string.IsNullOrEmpty(this.FeedFileName))
+                if (!string.IsNullOrEmpty(this.FeedFileName))
                 {
+                    var existingFile = ((await this.localFolder.TryGetItemAsync(this.FeedFileName)) as StorageFile);
+                    if(existingFile != null)
+                    {
+                        await existingFile.DeleteAsync(StorageDeleteOption.PermanentDelete);
+                    }
+
                     var storageFile = await this.localFolder.CreateFileAsync(Path.GetFileName(this.FeedFileName));
                     using (var randomAccessStream = await storageFile.OpenAsync(FileAccessMode.ReadWrite))
                     {
