@@ -1,21 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using Newtonsoft.Json;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
-using Windows.UI.Xaml.Input;
-using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Navigation;
 using Windows.Web.Http;
-
-// The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
 namespace PhantViz
 {
@@ -24,34 +12,39 @@ namespace PhantViz
     /// </summary>
     public sealed partial class MainPage : Page
     {
+        FeedDataManager feed;
+
         public MainPage()
         {
             this.InitializeComponent();
+
+            feed = new FeedDataManager()
+            {
+                FeedFileName="Humidity.json",
+                FeedUrlString = "https://data.sparkfun.com/output/G2J4DlppVaILqAn7XnKd.json",
+                FeedDisplayName = "Attic Temp and Humidity",
+            };
+
+            this.Loaded += OnLoaded;
+        }
+
+        private async void OnLoaded(object sender, RoutedEventArgs e)
+        {
+            await feed.TryLoadFromFile();
         }
 
         private async void Button_Click(object sender, RoutedEventArgs e)
         {
-            var client = new HttpClient();
+            await this.feed.RefreshFromServer();
 
-            var response = await client.GetAsync(new Uri("https://data.sparkfun.com/output/G2J4DlppVaILqAn7XnKd.json"));
-            var contentString = await response.Content.ReadAsStringAsync();
+            //var client = new HttpClient();
 
-            var readings = JsonConvert.DeserializeObject<List<Reading>>(contentString);
+            //var response = await client.GetAsync(new Uri("https://data.sparkfun.com/output/G2J4DlppVaILqAn7XnKd.json"));
+            //var contentString = await response.Content.ReadAsStringAsync();
+
+            //var readings = JsonConvert.DeserializeObject<List<Sample>>(contentString);
 
         }
     }
 
-    public class Reading
-    {
-        public float temperature { get; set; }
-        public float humidity { get; set; }
-        public DateTime timestamp { get; set; }
-    }
-
-    [JsonObject]
-    public class SerializationContainer
-    {
-        [JsonProperty(ItemIsReference = true, Order = 0)]
-        public List<Reading> Readings { get; set; }
-    }
-    }
+}
