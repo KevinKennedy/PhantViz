@@ -7,6 +7,7 @@ using Windows.Web.Http;
 using Microsoft.Graphics.Canvas;
 using Microsoft.Graphics.Canvas.Effects;
 using Windows.UI;
+using System.Globalization;
 
 namespace PhantViz
 {
@@ -58,6 +59,16 @@ namespace PhantViz
                 return;
             }
 
+            float leftMargin = 50;
+            float bottomMargin = 100;
+            float dataWidth = (float)sender.ActualWidth - leftMargin;
+            float dataHeight = (float)sender.ActualHeight - bottomMargin;
+
+            DateTime beginRange = feed.Samples[0].timestamp;
+            DateTime endRange = feed.Samples[feed.Samples.Count - 1].timestamp;
+            long rangeTicks = endRange.Ticks - beginRange.Ticks;
+            long ticksPerPixel = (long)((double)rangeTicks / dataWidth); // can cause problems.  Maybe don't use.
+
             float maxHumidity = feed.Samples[0].humidity;
             float maxTemperature = feed.Samples[0].temperature;
             foreach(var sample in this.feed.Samples)
@@ -66,30 +77,39 @@ namespace PhantViz
                 if (sample.temperature > maxTemperature) maxTemperature = sample.temperature;
             }
 
-            float samplesPerPixel = (float)sampleCount / (float)sender.ActualWidth;
-            float yScaleFactor = (float)sender.ActualHeight / maxHumidity;
+
+            float yScaleFactor = dataHeight / maxHumidity;
             int nextSampleToDrawIndex = 0;
             float prevX = -1;
             float prevY = 0;
-            for(float x = 0; x < sender.ActualWidth; x++)
+            DateTime previousSampleLocalTime = feed.Samples[0].timestamp.ToLocalTime();
+            for(float x = 0; x < dataWidth; x++)
             {
-                int postUltimateSampleIndex = (int) ((float)(x + 1) * samplesPerPixel);
-                if (postUltimateSampleIndex > sampleCount) postUltimateSampleIndex = sampleCount;
+                long lastSampleTick = beginRange.Ticks + (long)(x * ticksPerPixel);
 
-                for(int index = nextSampleToDrawIndex; index < postUltimateSampleIndex; index++)
+                while(nextSampleToDrawIndex < this.feed.Samples.Count &&
+                    this.feed.Samples[nextSampleToDrawIndex].timestamp.Ticks < lastSampleTick)
                 {
-                    float y = (float)sender.ActualHeight - (this.feed.Samples[index].humidity * yScaleFactor);
-                    if(prevX < 0)
+                    DateTime sampleLocalTime = feed.Samples[nextSampleToDrawIndex].timestamp.ToLocalTime();
+                    if (sampleLocalTime.Day != previousSampleLocalTime.Day)
                     {
-                        prevX = x;
+                        args.DrawingSession.DrawLine(x + leftMargin, 0, x + leftMargin, dataHeight, Colors.Black);
+                        args.DrawingSession.DrawText(sampleLocalTime.ToString("d", CultureInfo.DefaultThreadCurrentUICulture), x + leftMargin, dataHeight, Colors.Black);
+                    }
+                    previousSampleLocalTime = sampleLocalTime;
+
+                    float y = dataHeight - (this.feed.Samples[nextSampleToDrawIndex].humidity * yScaleFactor);
+                    if (prevX < 0)
+                    {
+                        prevX = x + leftMargin;
                         prevY = y;
                     }
-                    args.DrawingSession.DrawLine(prevX, prevY, x, y, Colors.Red);
-                    prevX = x;
+                    args.DrawingSession.DrawLine(prevX, prevY, x + leftMargin, y, Colors.Red);
+                    prevX = x + leftMargin;
                     prevY = y;
-                }
+                    nextSampleToDrawIndex++;
 
-                nextSampleToDrawIndex = postUltimateSampleIndex;
+                }
             }
         }
     }
