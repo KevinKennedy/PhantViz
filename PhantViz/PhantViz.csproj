@@ -98,6 +98,10 @@
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Feed.cs" />
+    <Compile Include="FeedDefinition.cs" />
+    <Compile Include="FeedField.cs" />
+    <Compile Include="FeedSchema.cs" />
     <Compile Include="MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
