@@ -11,19 +11,19 @@ namespace PhantViz
     /// </summary>
     public sealed partial class MainPage : Page
     {
-        FeedDataManager feedDataManager;
+        //FeedDataManager feedDataManager;
         Feed feed;
 
         public MainPage()
         {
             this.InitializeComponent();
 
-            this.feedDataManager = new FeedDataManager()
-            {
-                FeedFileName="Humidity.json",
-                FeedUrlString = "https://data.sparkfun.com/output/G2J4DlppVaILqAn7XnKd.json",
-                FeedDisplayName = "Attic Temp and Humidity",
-            };
+            //this.feedDataManager = new FeedDataManager()
+            //{
+            //    FeedFileName="Humidity.json",
+            //    FeedUrlString = "https://data.sparkfun.com/output/G2J4DlppVaILqAn7XnKd.json",
+            //    FeedDisplayName = "Attic Temp and Humidity",
+            //};
 
             this.feed = new Feed();
             this.feed.FeedDefinition = new FeedDefinition()
@@ -74,7 +74,18 @@ namespace PhantViz
 
         private async void Button_Click(object sender, RoutedEventArgs e)
         {
-            await this.feed.RefreshFromServer();
+            this.StatusTextBlock.Text = "Connecting to server";
+            bool success = await this.feed.RefreshFromServer();
+            if(success)
+            {
+                this.StatusTextBlock.Text = "Data downloaded success";
+            }
+            else
+            {
+                this.StatusTextBlock.Text = "Data downloaded fail";
+            }
+
+            this.canvas.Invalidate();
         }
 
         private void canvas_Draw(Microsoft.Graphics.Canvas.UI.Xaml.CanvasControl sender, Microsoft.Graphics.Canvas.UI.Xaml.CanvasDrawEventArgs args)

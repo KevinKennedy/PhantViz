@@ -11,7 +11,12 @@
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
         <canvas:CanvasControl x:Name="canvas" Draw="canvas_Draw"/>
-        <Button HorizontalAlignment="Left" VerticalAlignment="Top" Content="Sync" Click="Button_Click"/>
+        <StackPanel Orientation="Horizontal">
+            <Button HorizontalAlignment="Left" VerticalAlignment="Top" Content="Sync" Click="Button_Click"/>
+            <TextBlock x:Name="StatusTextBlock" />
+        </StackPanel>
+
+
 
     </Grid>
 </Page>

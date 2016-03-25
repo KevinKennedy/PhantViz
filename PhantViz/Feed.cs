@@ -54,7 +54,10 @@ namespace PhantViz
             {
                 var storageFile = await this.localFolder.GetFileAsync(this.FeedDefinition.FeedFileName);
                 var contentString = await FileIO.ReadTextAsync(storageFile);
-                this.LoadFromString(contentString);
+                if(!this.TryLoadFromString(contentString))
+                {
+                    return false;
+                }
             }
             catch (System.IO.FileNotFoundException)
             {
@@ -64,13 +67,25 @@ namespace PhantViz
             return true;
         }
 
-        public async Task RefreshFromServer()
+        public async Task<bool> RefreshFromServer()
         {
             using (var client = new HttpClient())
             {
-                var response = await client.GetAsync(new Uri("https://data.sparkfun.com/output/G2J4DlppVaILqAn7XnKd.json"));
+                HttpResponseMessage response;
+                try
+                {
+                    response = await client.GetAsync(new Uri("https://data.sparkfun.com/output/G2J4DlppVaILqAn7XnKd.json"));
+                }
+                catch(System.Runtime.InteropServices.COMException)
+                {
+                    return false;
+                }
+
                 var contentString = await response.Content.ReadAsStringAsync();
-                this.LoadFromString(contentString);
+                if(!this.TryLoadFromString(contentString))
+                {
+                    return false;
+                }
 
                 // Save this to our local file store
                 if (!string.IsNullOrEmpty(this.FeedDefinition.FeedFileName))
@@ -95,14 +110,26 @@ namespace PhantViz
                 }
             }
 
+            return true;
+
         }
 
-        public void LoadFromString(string contentString)
+        public bool TryLoadFromString(string contentString)
         {
-            var samples = JsonConvert.DeserializeObject<List<Dictionary<string, string>>>(contentString);
+            List<Dictionary<string, string>> samples;
+
+            try
+            {
+                samples = JsonConvert.DeserializeObject<List<Dictionary<string, string>>>(contentString);
+            }
+            catch(Newtonsoft.Json.JsonSerializationException)
+            {
+                return false;
+            }
 
             samples.Sort((a, b) => a["timestamp"].CompareTo(b["timestamp"]));
 
+            // TODO - make this function not hose the data if field.Append fails from parsing errors
             foreach (var field in this.fields)
             {
                 field.Reset(samples.Count);
@@ -115,6 +142,8 @@ namespace PhantViz
                     field.Append(sample);
                 }
             }
+
+            return true;
 
         }
 
